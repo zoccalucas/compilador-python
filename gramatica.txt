@@ -1,0 +1,7 @@
+expr    : term (SOMA term | SUBT term)*
+
+term    : factor (MULT factor | DIVI factor)*
+
+factor  : INTE|FLUT
+        : (SOMA|SUBT) factor
+        : ESQD_PAREN expr DIRT_PAREN
