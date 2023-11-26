@@ -3,17 +3,21 @@
 #######################################
 
 class Error:
-    def __init__(self, nome_erro, detalhes):
+    def __init__(self, pos_inicio, pos_fim, nome_erro, detalhes):
+        self.pos_inicio = pos_inicio
+        self.pos_fim = pos_fim
         self.nome_erro = nome_erro
         self.detalhes = detalhes
 
     def __str__(self):
-        return f'{self.nome_erro}: {self.detalhes}'
+        result = f'{self.nome_erro}: {self.detalhes}'
+        result += f'Arquivo {self.pos_inicio.arquivo}, linha {self.pos_inicio.linha + 1}'
+        return result
 
 
 class CaractereInvalidoError(Error):
-    def __init__(self, detalhes):
-        super().__init__('Caractere Inválido', detalhes)
+    def __init__(self, pos_inicio, pos_fim, detalhes):
+        super().__init__(pos_inicio, pos_fim, 'Caractere Inválido', detalhes + '\n')
 
 #######################################
 # Constantes
@@ -22,9 +26,36 @@ class CaractereInvalidoError(Error):
 
 DIGITOS = '0123456789'
 
+
+#######################################
+# Posições
+#######################################
+
+class Posicao:
+    def __init__(self, indice, linha, coluna, arquivo, texto):
+        self.indice = indice
+        self.linha = linha
+        self.coluna = coluna
+        self.arquivo = arquivo
+        self.texto = texto
+
+    def avanca(self, caractere_atual):
+        self.indice += 1
+        self.coluna += 1
+
+        if caractere_atual == '\n':
+            self.linha += 1
+            self.coluna = 0
+
+        return self
+
+    def copia(self):
+        return Posicao(self.indice, self.linha, self.coluna, self.arquivo, self.texto)
+
 #######################################
 # Tokens
 #######################################
+
 
 ML_INT = 'INTEIRO'
 ML_FLOAT = 'FLUTUANTE'
@@ -52,16 +83,17 @@ class Token:
 
 
 class Lexer:
-    def __init__(self, text):
-        self.text = text
-        self.pos = -1
+    def __init__(self, arquivo, texto):
+        self.arquivo = arquivo
+        self.texto = texto
+        self.pos = Posicao(-1, 0, -1, arquivo, texto)
         self.caractere_atual = None
         self.avanca()
 
     def avanca(self):
-        self.pos += 1
-        self.caractere_atual = self.text[self.pos] if self.pos < len(
-            self.text) else None
+        self.pos.avanca(self.caractere_atual)
+        self.caractere_atual = self.texto[self.pos.indice] if self.pos.indice < len(
+            self.texto) else None
 
     def cria_tokens(self):
         tokens = []
@@ -90,9 +122,10 @@ class Lexer:
                 tokens.append(Token(ML_RPAREN))
                 self.avanca()
             else:
+                pos_inicio = self.pos.copia()
                 caractere = self.caractere_atual
                 self.avanca()
-                return [], CaractereInvalidoError("'" + caractere + "'")
+                return [], CaractereInvalidoError(pos_inicio, self.pos, "'" + caractere + "'")
 
         return tokens, None
 
@@ -120,8 +153,8 @@ class Lexer:
 #######################################
 
 
-def executa(text):
-    lexer = Lexer(text)
+def executa(arquivo, texto):
+    lexer = Lexer(arquivo, texto)
     tokens, error = lexer.cria_tokens()
 
     return tokens, error
