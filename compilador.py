@@ -2,7 +2,7 @@
 # Imports
 #######################################
 
-from string_com_setas import *
+from string_com_setas import string_com_setas
 
 
 #######################################
@@ -31,8 +31,32 @@ class CaractereInvalidoError(Error):
 
 
 class SintaxeInvalidaError(Error):
-    def __init__(self, pos_inicio, pos_fim, detalhes=''):
+    def __init__(self, pos_inicio, pos_fim, detalhes):
         super().__init__(pos_inicio, pos_fim, 'Sintáxe Inválida', detalhes + '\n')
+
+
+class RuntimeError(Error):
+    def __init__(self, pos_inicio, pos_fim, detalhes, context):
+        super().__init__(pos_inicio, pos_fim, 'Erro na execução', detalhes + '\n')
+        self.context = context
+        
+    def as_string(self):
+        result  = self.generate_traceback()
+        result += f'{self.nome_erro}: {self.detalhes}'
+        result += '\n\n' + string_com_setas(self.pos_inicio.texto, self.pos_inicio, self.pos_fim)
+        return result
+
+    def generate_traceback(self):
+        resultado = ''    
+        pos = self.pos_inicio
+        ctx = self.context
+        
+        while ctx:
+            resultado = f'  Arquivo {pos.arquivo}, line {str(pos.linha + 1)}, in {ctx.display_name}\n' + resultado
+            pos = ctx.parent_entry_pos
+            ctx = ctx.parent
+            
+            return 'Traceback (most recent call last):\n' + resultado
 
 #######################################
 # Constantes
@@ -183,6 +207,9 @@ class NumberNode:
     def __init__(self, token):
         self.token = token
 
+        self.pos_inicio = self.token.pos_inicio
+        self.pos_fim = self.token.pos_fim
+
     def __repr__(self):
         return f'{self.token}'
 
@@ -193,14 +220,20 @@ class BinOpNode:
         self.op_token = op_token
         self.direita = direita
 
+        self.pos_inicio = self.esquerda.pos_inicio
+        self.pos_fim = self.direita.pos_fim
+
     def __repr__(self):
         return f'({self.esquerda}, {self.op_token}, {self.direita})'
 
 
-class UnOpNode:
+class UnaryOpNode:
     def __init__(self, op_token, node):
         self.op_token = op_token
         self.node = node
+
+        self.pos_inicio = self.op_token.pos_inicio
+        self.pos_fim = self.op_token.pos_fim
 
     def __repr__(self):
         return f'({self.op_token}, {self.node})'
@@ -269,12 +302,12 @@ class Parser:
             factor = res.registro(self.factor())
             if res.error:
                 return res
-            return res.sucesso(UnOpNode(token, factor))
+            return res.sucesso(UnaryOpNode(token, factor))
 
         elif token.type in (ML_INT, ML_FLOAT):
             res.registro(self.avanca())
             return res.sucesso(NumberNode(token))
-        
+
         elif token.type == ML_LPAREN:
             res.registro(self.avanca())
             expr = res.registro(self.expr())
@@ -320,6 +353,143 @@ class Parser:
 
 
 #######################################
+# Runtime Result
+#######################################
+
+class RTResult:
+    def __init__(self):
+        self.value = None
+        self.error = None
+
+    def registro(self, res):
+        if res.error:
+            self.error = res.error
+        return res.value
+
+    def sucesso(self, value):
+        self.value = value
+        return self
+
+    def falha(self, error):
+        self.error = error
+        return self
+
+
+#######################################
+# Valores
+#######################################
+
+class Numero:
+    def __init__(self, value):
+        self.value = value
+        self.set_pos()
+        self.set_context()
+
+    def set_pos(self, pos_inicio=None, pos_fim=None):
+        self.pos_inicio = pos_inicio
+        self.pos_fim = pos_fim
+        return self
+
+    def set_context(self, context=None):
+        self.context = context
+        return self
+
+    def added_to(self, other):
+        if isinstance(other, Numero):
+            return Numero(self.value + other.value).set_context(self.context), None
+
+    def subbed_by(self, other):
+        if isinstance(other, Numero):
+            return Numero(self.value - other.value).set_context(self.context), None
+
+    def multed_by(self, other):
+        if isinstance(other, Numero):
+            return Numero(self.value * other.value).set_context(self.context), None
+
+    def dived_by(self, other):
+        if isinstance(other, Numero):
+            if other.value == 0:
+                return None, RuntimeError(
+					other.pos_inicio, other.pos_fim,
+					'Divisão por zero',
+                    self.context
+				)
+                
+            return Numero(self.value / other.value).set_context(self.context), None
+
+    def __repr__(self):
+        return str(self.value)
+    
+
+#######################################
+# Contexto
+#######################################
+
+class Context:
+	def __init__(self, display_name, parent=None, parent_entry_pos=None):
+		self.display_name = display_name
+		self.parent = parent
+		self.parent_entry_pos = parent_entry_pos
+
+
+#######################################
+# Interpretador
+#######################################
+
+
+class Interpretador:
+    def visita(self, node, context):
+        metodo_nome = f'visit_{type(node).__name__}'
+        metodo = getattr(self, metodo_nome, self.no_visit_method)
+        return metodo(node, context)
+
+    def no_visit_method(self, node, context):
+        raise Exception(f'visit_{type(node).__name__} método indefinido')
+
+    def visit_NumberNode(self, node, context):
+        return RTResult().sucesso(
+            Numero(node.token.value).set_context(context).set_pos(node.pos_inicio, node.pos_fim)
+        )
+
+    def visit_BinOpNode(self, node, context):
+        res = RTResult()
+        esquerda = res.registro(self.visita(node.esquerda, context))
+        if res.error:
+            return res
+        direita = res.registro(self.visita(node.direita, context))
+        if res.error:
+            return res
+
+        if node.op_token.type == ML_PLUS:
+            resultado, error = esquerda.added_to(direita)
+        elif node.op_token.type == ML_MINUS:
+            resultado, error = esquerda.subbed_by(direita)
+        elif node.op_token.type == ML_MUL:
+            resultado, error = esquerda.multed_by(direita)
+        elif node.op_token.type == ML_DIV:
+            resultado, error = esquerda.dived_by(direita)
+
+        if error:
+            return res.falha(error)
+        else:
+            return res.sucesso(resultado.set_pos(node.pos_inicio, node.pos_fim))
+
+    def visit_UnaryOpNode(self, node, context):
+        res = RTResult()
+        numero = res.registro(self.visita(node.node, context))
+        if res.error: return res
+        
+        error = None
+
+        if node.op_token.type == ML_MINUS:
+            numero = numero.multed_by(Numero(-1))
+            
+        if error:
+            return res.falha(error)
+        else: 
+            return res.sucesso(numero.set_pos(node.pos_inicio, node.pos_fim))
+
+#######################################
 # Executa o código
 #######################################
 
@@ -334,5 +504,12 @@ def executa(arquivo, texto):
     # Gera Árvore Sintática Abstrata
     parser = Parser(tokens)
     arvore_sintatica = parser.parse()
+    if arvore_sintatica.error:
+        return None, arvore_sintatica.error
 
-    return arvore_sintatica.node, arvore_sintatica.error
+    # Roda o programa
+    interpretador = Interpretador()
+    contexto = Context('<program>')
+    resultado = interpretador.visita(arvore_sintatica.node, contexto)
+
+    return resultado.value, resultado.error
