@@ -2,8 +2,13 @@
 # Imports
 #######################################
 
-from string_com_setas import string_com_setas
+from string_com_setas import *
 
+#######################################
+# Constantes
+#######################################
+
+DIGITS = '0123456789'
 
 #######################################
 # Erros
@@ -11,117 +16,109 @@ from string_com_setas import string_com_setas
 
 
 class Error:
-    def __init__(self, pos_inicio, pos_fim, nome_erro, detalhes):
-        self.pos_inicio = pos_inicio
-        self.pos_fim = pos_fim
-        self.nome_erro = nome_erro
-        self.detalhes = detalhes
+    def __init__(self, pos_start, pos_end, error_name, details):
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+        self.error_name = error_name
+        self.details = details
 
-    def __str__(self):
-        result = f'{self.nome_erro}: {self.detalhes}'
-        result += f'Arquivo {self.pos_inicio.arquivo}, linha {self.pos_inicio.linha + 1}'
-        result += '\n\n' + string_com_setas(
-            self.pos_inicio.texto, self.pos_inicio, self.pos_fim)
+    def as_string(self):
+        result = f'{self.error_name}: {self.details}\n'
+        result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
+        result += '\n\n' + \
+            string_com_setas(self.pos_start.ftxt, self.pos_start, self.pos_end)
         return result
 
 
-class CaractereInvalidoError(Error):
-    def __init__(self, pos_inicio, pos_fim, detalhes):
-        super().__init__(pos_inicio, pos_fim, 'Caractere Inválido', detalhes + '\n')
+class IllegalCharError(Error):
+    def __init__(self, pos_start, pos_end, details):
+        super().__init__(pos_start, pos_end, 'Illegal Character', details)
 
 
-class SintaxeInvalidaError(Error):
-    def __init__(self, pos_inicio, pos_fim, detalhes):
-        super().__init__(pos_inicio, pos_fim, 'Sintáxe Inválida', detalhes + '\n')
+class InvalidSyntaxError(Error):
+    def __init__(self, pos_start, pos_end, details=''):
+        super().__init__(pos_start, pos_end, 'Invalid Syntax', details)
 
 
-class RuntimeError(Error):
-    def __init__(self, pos_inicio, pos_fim, detalhes, context):
-        super().__init__(pos_inicio, pos_fim, 'Erro na execução', detalhes + '\n')
+class RTError(Error):
+    def __init__(self, pos_start, pos_end, details, context):
+        super().__init__(pos_start, pos_end, 'Runtime Error', details)
         self.context = context
 
     def as_string(self):
         result = self.generate_traceback()
-        result += f'{self.nome_erro}: {self.detalhes}'
+        result += f'{self.error_name}: {self.details}'
         result += '\n\n' + \
-            string_com_setas(self.pos_inicio.texto,
-                             self.pos_inicio, self.pos_fim)
+            string_com_setas(self.pos_start.ftxt, self.pos_start, self.pos_end)
         return result
 
     def generate_traceback(self):
-        resultado = ''
-        pos = self.pos_inicio
+        result = ''
+        pos = self.pos_start
         ctx = self.context
 
         while ctx:
-            resultado = f'  Arquivo {pos.arquivo}, line {str(pos.linha + 1)}, in {ctx.display_name}\n' + resultado
+            result = f'  File {pos.fn}, line {str(pos.ln + 1)}, in {ctx.display_name}\n' + result
             pos = ctx.parent_entry_pos
             ctx = ctx.parent
 
-            return 'Traceback (most recent call last):\n' + resultado
+        return 'Traceback (most recent call last):\n' + result
 
 #######################################
-# Constantes
+# Posição
 #######################################
 
 
-DIGITOS = '0123456789'
+class Position:
+    def __init__(self, idx, ln, col, fn, ftxt):
+        self.idx = idx
+        self.ln = ln
+        self.col = col
+        self.fn = fn
+        self.ftxt = ftxt
 
+    def advance(self, current_char=None):
+        self.idx += 1
+        self.col += 1
 
-#######################################
-# Posições
-#######################################
-
-class Posicao:
-    def __init__(self, indice, linha, coluna, arquivo, texto):
-        self.indice = indice
-        self.linha = linha
-        self.coluna = coluna
-        self.arquivo = arquivo
-        self.texto = texto
-
-    def avanca(self, caractere_atual=None):
-        self.indice += 1
-        self.coluna += 1
-
-        if caractere_atual == '\n':
-            self.linha += 1
-            self.coluna = 0
+        if current_char == '\n':
+            self.ln += 1
+            self.col = 0
 
         return self
 
-    def copia(self):
-        return Posicao(self.indice, self.linha, self.coluna, self.arquivo, self.texto)
+    def copy(self):
+        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
 
 #######################################
 # Tokens
 #######################################
 
 
-ML_INT = 'INTE'
-ML_FLOAT = 'FLUT'
-ML_PLUS = 'SOMA'
-ML_MINUS = 'SUBT'
-ML_MUL = 'MULT'
-ML_DIV = 'DIVI'
-ML_LPAREN = 'ESQD_PAREN'
-ML_RPAREN = 'DIRT_PAREN'
+ML_INT = 'INT'
+ML_FLOAT = 'FLOAT'
+ML_PLUS = 'PLUS'
+ML_MINUS = 'MINUS'
+ML_MUL = 'MUL'
+ML_DIV = 'DIV'
+ML_POW = 'POW'
+ML_LPAREN = 'LPAREN'
+ML_RPAREN = 'RPAREN'
 ML_EOF = 'EOF'
-ML_POW = 'POTE'
 
 
 class Token:
-    def __init__(self, type, value=None, pos_inicio=None, pos_fim=None):
-        self.type = type
+    def __init__(self, type_, value=None, pos_start=None, pos_end=None):
+        self.type = type_
         self.value = value
 
-        if pos_inicio:
-            self.pos_inicio = pos_inicio.copia()
-            self.pos_fim = pos_inicio.copia()
-            self.pos_fim.avanca()
+        if pos_start:
+            self.pos_start = pos_start.copy()
+            self.pos_end = pos_start.copy()
+            self.pos_end.advance()
 
-        if pos_fim:
-            self.pos_fim = pos_fim
+        if pos_end:
+            self.pos_end = pos_end
 
     def __repr__(self):
         if self.value:
@@ -129,132 +126,132 @@ class Token:
         return f'{self.type}'
 
 #######################################
-# Lexer - Analisador Léxico
+# LEXER
 #######################################
 
 
 class Lexer:
-    def __init__(self, arquivo, texto):
-        self.arquivo = arquivo
-        self.texto = texto
-        self.pos = Posicao(-1, 0, -1, arquivo, texto)
-        self.caractere_atual = None
-        self.avanca()
+    def __init__(self, fn, text):
+        self.fn = fn
+        self.text = text
+        self.pos = Position(-1, 0, -1, fn, text)
+        self.current_char = None
+        self.advance()
 
-    def avanca(self):
-        self.pos.avanca(self.caractere_atual)
-        self.caractere_atual = self.texto[self.pos.indice] if self.pos.indice < len(
-            self.texto) else None
+    def advance(self):
+        self.pos.advance(self.current_char)
+        self.current_char = self.text[self.pos.idx] if self.pos.idx < len(
+            self.text) else None
 
-    def cria_tokens(self):
+    def make_tokens(self):
         tokens = []
 
-        while self.caractere_atual != None:
-            if self.caractere_atual in ' \t':
-                self.avanca()
-            elif self.caractere_atual in DIGITOS:
-                tokens.append(self.cria_num())
-            elif self.caractere_atual == '+':
-                tokens.append(Token(ML_PLUS, pos_inicio=self.pos))
-                self.avanca()
-            elif self.caractere_atual == '-':
-                tokens.append(Token(ML_MINUS, pos_inicio=self.pos))
-                self.avanca()
-            elif self.caractere_atual == '*':
-                tokens.append(Token(ML_MUL, pos_inicio=self.pos))
-                self.avanca()
-            elif self.caractere_atual == '/':
-                tokens.append(Token(ML_DIV, pos_inicio=self.pos))
-                self.avanca()
-            elif self.caractere_atual == '^':
-                tokens.append(Token(ML_POW, pos_inicio=self.pos))
-                self.avanca()
-            elif self.caractere_atual == '(':
-                tokens.append(Token(ML_LPAREN, pos_inicio=self.pos))
-                self.avanca()
-            elif self.caractere_atual == ')':
-                tokens.append(Token(ML_RPAREN, pos_inicio=self.pos))
-                self.avanca()
+        while self.current_char != None:
+            if self.current_char in ' \t':
+                self.advance()
+            elif self.current_char in DIGITS:
+                tokens.append(self.make_number())
+            elif self.current_char == '+':
+                tokens.append(Token(ML_PLUS, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '-':
+                tokens.append(Token(ML_MINUS, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '*':
+                tokens.append(Token(ML_MUL, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '/':
+                tokens.append(Token(ML_DIV, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '^':
+                tokens.append(Token(ML_POW, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '(':
+                tokens.append(Token(ML_LPAREN, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == ')':
+                tokens.append(Token(ML_RPAREN, pos_start=self.pos))
+                self.advance()
             else:
-                pos_inicio = self.pos.copia()
-                caractere = self.caractere_atual
-                self.avanca()
-                return [], CaractereInvalidoError(pos_inicio, self.pos, "'" + caractere + "'")
+                pos_start = self.pos.copy()
+                char = self.current_char
+                self.advance()
+                return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
 
-        tokens.append(Token(ML_EOF, pos_inicio=self.pos))
+        tokens.append(Token(ML_EOF, pos_start=self.pos))
         return tokens, None
 
-    def cria_num(self):
+    def make_number(self):
         num_str = ''
         dot_count = 0
-        pos_inicio = self.pos.copia()
+        pos_start = self.pos.copy()
 
-        while self.caractere_atual != None and self.caractere_atual in DIGITOS + '.':
-            if self.caractere_atual == '.':
+        while self.current_char != None and self.current_char in DIGITS + '.':
+            if self.current_char == '.':
                 if dot_count == 1:
                     break
                 dot_count += 1
                 num_str += '.'
             else:
-                num_str += self.caractere_atual
-            self.avanca()
+                num_str += self.current_char
+            self.advance()
 
         if dot_count == 0:
-            return Token(ML_INT, int(num_str), pos_inicio, self.pos)
+            return Token(ML_INT, int(num_str), pos_start, self.pos)
         else:
-            return Token(ML_FLOAT, float(num_str), pos_inicio, self.pos)
+            return Token(ML_FLOAT, float(num_str), pos_start, self.pos)
 
 #######################################
-# Nós
+# NODES
 #######################################
 
 
 class NumberNode:
-    def __init__(self, token):
-        self.token = token
+    def __init__(self, tok):
+        self.tok = tok
 
-        self.pos_inicio = self.token.pos_inicio
-        self.pos_fim = self.token.pos_fim
+        self.pos_start = self.tok.pos_start
+        self.pos_end = self.tok.pos_end
 
     def __repr__(self):
-        return f'{self.token}'
+        return f'{self.tok}'
 
 
 class BinOpNode:
-    def __init__(self, esquerda, op_token, direita):
-        self.esquerda = esquerda
-        self.op_token = op_token
-        self.direita = direita
+    def __init__(self, left_node, op_tok, right_node):
+        self.left_node = left_node
+        self.op_tok = op_tok
+        self.right_node = right_node
 
-        self.pos_inicio = self.esquerda.pos_inicio
-        self.pos_fim = self.direita.pos_fim
+        self.pos_start = self.left_node.pos_start
+        self.pos_end = self.right_node.pos_end
 
     def __repr__(self):
-        return f'({self.esquerda}, {self.op_token}, {self.direita})'
+        return f'({self.left_node}, {self.op_tok}, {self.right_node})'
 
 
 class UnaryOpNode:
-    def __init__(self, op_token, node):
-        self.op_token = op_token
+    def __init__(self, op_tok, node):
+        self.op_tok = op_tok
         self.node = node
 
-        self.pos_inicio = self.op_token.pos_inicio
-        self.pos_fim = self.op_token.pos_fim
+        self.pos_start = self.op_tok.pos_start
+        self.pos_end = node.pos_end
 
     def __repr__(self):
-        return f'({self.op_token}, {self.node})'
-
+        return f'({self.op_tok}, {self.node})'
 
 #######################################
-# Resultado do Analisador Sintático
+# PARSE RESULT
 #######################################
+
 
 class ParseResult:
     def __init__(self):
         self.error = None
         self.node = None
 
-    def registro(self, res):
+    def register(self, res):
         if isinstance(res, ParseResult):
             if res.error:
                 self.error = res.error
@@ -262,67 +259,66 @@ class ParseResult:
 
         return res
 
-    def sucesso(self, node):
+    def success(self, node):
         self.node = node
         return self
 
-    def falha(self, error):
+    def failure(self, error):
         self.error = error
         return self
 
-
 #######################################
-# Parser - Analisador Sintático
+# PARSER
 #######################################
 
 
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
-        self.token_indice = -1
-        self.avanca()
+        self.tok_idx = -1
+        self.advance()
 
-    def avanca(self):
-        self.token_indice += 1
-        if self.token_indice < len(self.tokens):
-            self.token_atual = self.tokens[self.token_indice]
-        return self.token_atual
+    def advance(self, ):
+        self.tok_idx += 1
+        if self.tok_idx < len(self.tokens):
+            self.current_tok = self.tokens[self.tok_idx]
+        return self.current_tok
 
     def parse(self):
         res = self.expr()
-        if not res.error and self.token_atual.type != ML_EOF:
-            return res.falha(SintaxeInvalidaError(
-                self.token_atual.pos_inicio, self.token_atual.pos_fim,
-                "Esperado '+', '-', '*' ou '/'"
+        if not res.error and self.current_tok.type != ML_EOF:
+            return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                "Expected '+', '-', '*' or '/'"
             ))
         return res
 
-    #######################################
+    ###################################
 
     def atom(self):
         res = ParseResult()
-        token = self.token_atual
+        tok = self.current_tok
 
-        if token.type in (ML_INT, ML_FLOAT):
-            res.registro(self.avanca())
-            return res.sucesso(NumberNode(token))
+        if tok.type in (ML_INT, ML_FLOAT):
+            res.register(self.advance())
+            return res.success(NumberNode(tok))
 
-        elif token.type == ML_LPAREN:
-            res.registro(self.avanca())
-            expr = res.registro(self.expr())
+        elif tok.type == ML_LPAREN:
+            res.register(self.advance())
+            expr = res.register(self.expr())
             if res.error:
                 return res
-            if self.token_atual.type == ML_RPAREN:
-                res.registro(self.avanca())
-                return res.sucesso(expr)
+            if self.current_tok.type == ML_RPAREN:
+                res.register(self.advance())
+                return res.success(expr)
             else:
-                return res.falha(SintaxeInvalidaError(
-                    self.token_atual.pos_inicio, self.token_atual.pos_fim,
-                    "Esperado ')'"
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected ')'"
                 ))
 
-        return res.falha(SintaxeInvalidaError(
-            token.pos_inicio, token.pos_fim,
+        return res.failure(InvalidSyntaxError(
+            tok.pos_start, tok.pos_end,
             "Expected int, float, '+', '-' or '('"
         ))
 
@@ -331,15 +327,15 @@ class Parser:
 
     def factor(self):
         res = ParseResult()
-        token = self.token_atual
+        tok = self.current_tok
 
-        if token.type in (ML_PLUS, ML_MINUS):
-            res.registro(self.avanca())
-            factor = res.registro(self.factor())
+        if tok.type in (ML_PLUS, ML_MINUS):
+            res.register(self.advance())
+            factor = res.register(self.factor())
             if res.error:
                 return res
-            return res.sucesso(UnaryOpNode(token, factor))
-        
+            return res.success(UnaryOpNode(tok, factor))
+
         return self.power()
 
     def term(self):
@@ -348,64 +344,64 @@ class Parser:
     def expr(self):
         return self.bin_op(self.term, (ML_PLUS, ML_MINUS))
 
-    #######################################
+    ###################################
 
     def bin_op(self, func_a, ops, func_b=None):
         if func_b == None:
             func_b = func_a
 
         res = ParseResult()
-        esquerda = res.registro(func_a())
+        left = res.register(func_a())
         if res.error:
             return res
 
-        while self.token_atual.type in ops:
-            op_token = self.token_atual
-            res.registro(self.avanca())
-            direita = res.registro(func_b())
+        while self.current_tok.type in ops:
+            op_tok = self.current_tok
+            res.register(self.advance())
+            right = res.register(func_b())
             if res.error:
                 return res
-            esquerda = BinOpNode(esquerda, op_token, direita)
+            left = BinOpNode(left, op_tok, right)
 
-        return res.sucesso(esquerda)
-
+        return res.success(left)
 
 #######################################
-# Runtime Result
+# RUNTIME RESULT
 #######################################
+
 
 class RTResult:
     def __init__(self):
         self.value = None
         self.error = None
 
-    def registro(self, res):
+    def register(self, res):
         if res.error:
             self.error = res.error
         return res.value
 
-    def sucesso(self, value):
+    def success(self, value):
         self.value = value
         return self
 
-    def falha(self, error):
+    def failure(self, error):
         self.error = error
         return self
 
-
 #######################################
-# Valores
+# VALUES
 #######################################
 
-class Numero:
+
+class Number:
     def __init__(self, value):
         self.value = value
         self.set_pos()
         self.set_context()
 
-    def set_pos(self, pos_inicio=None, pos_fim=None):
-        self.pos_inicio = pos_inicio
-        self.pos_fim = pos_fim
+    def set_pos(self, pos_start=None, pos_end=None):
+        self.pos_start = pos_start
+        self.pos_end = pos_end
         return self
 
     def set_context(self, context=None):
@@ -413,39 +409,39 @@ class Numero:
         return self
 
     def added_to(self, other):
-        if isinstance(other, Numero):
-            return Numero(self.value + other.value).set_context(self.context), None
+        if isinstance(other, Number):
+            return Number(self.value + other.value).set_context(self.context), None
 
     def subbed_by(self, other):
-        if isinstance(other, Numero):
-            return Numero(self.value - other.value).set_context(self.context), None
+        if isinstance(other, Number):
+            return Number(self.value - other.value).set_context(self.context), None
 
     def multed_by(self, other):
-        if isinstance(other, Numero):
-            return Numero(self.value * other.value).set_context(self.context), None
+        if isinstance(other, Number):
+            return Number(self.value * other.value).set_context(self.context), None
 
     def dived_by(self, other):
-        if isinstance(other, Numero):
+        if isinstance(other, Number):
             if other.value == 0:
-                return None, RuntimeError(
-                    other.pos_inicio, other.pos_fim,
-                    'Divisão por zero',
+                return None, RTError(
+                    other.pos_start, other.pos_end,
+                    'Division by zero',
                     self.context
                 )
 
-            return Numero(self.value / other.value).set_context(self.context), None
+            return Number(self.value / other.value).set_context(self.context), None
 
     def powed_by(self, other):
-        if isinstance(other, Numero):
-            return Numero(self.value ** other.value).set_context(self.context), None
+        if isinstance(other, Number):
+            return Number(self.value ** other.value).set_context(self.context), None
 
     def __repr__(self):
         return str(self.value)
 
+#######################################
+# CONTEXT
+#######################################
 
-#######################################
-# Contexto
-#######################################
 
 class Context:
     def __init__(self, display_name, parent=None, parent_entry_pos=None):
@@ -453,89 +449,626 @@ class Context:
         self.parent = parent
         self.parent_entry_pos = parent_entry_pos
 
-
 #######################################
-# Interpretador
+# INTERPRETER
 #######################################
 
 
-class Interpretador:
-    def visita(self, node, context):
-        metodo_nome = f'visit_{type(node).__name__}'
-        metodo = getattr(self, metodo_nome, self.no_visit_method)
-        return metodo(node, context)
+class Interpreter:
+    def visit(self, node, context):
+        method_name = f'visit_{type(node).__name__}'
+        method = getattr(self, method_name, self.no_visit_method)
+        return method(node, context)
 
     def no_visit_method(self, node, context):
-        raise Exception(f'visit_{type(node).__name__} método indefinido')
+        raise Exception(f'No visit_{type(node).__name__} method defined')
+
+    ###################################
 
     def visit_NumberNode(self, node, context):
-        return RTResult().sucesso(
-            Numero(node.token.value).set_context(
-                context).set_pos(node.pos_inicio, node.pos_fim)
+        return RTResult().success(
+            Number(node.tok.value).set_context(
+                context).set_pos(node.pos_start, node.pos_end)
         )
 
     def visit_BinOpNode(self, node, context):
         res = RTResult()
-        esquerda = res.registro(self.visita(node.esquerda, context))
+        left = res.register(self.visit(node.left_node, context))
         if res.error:
             return res
-        direita = res.registro(self.visita(node.direita, context))
+        right = res.register(self.visit(node.right_node, context))
         if res.error:
             return res
 
-        if node.op_token.type == ML_PLUS:
-            resultado, error = esquerda.added_to(direita)
-        elif node.op_token.type == ML_MINUS:
-            resultado, error = esquerda.subbed_by(direita)
-        elif node.op_token.type == ML_MUL:
-            resultado, error = esquerda.multed_by(direita)
-        elif node.op_token.type == ML_DIV:
-            resultado, error = esquerda.dived_by(direita)
-        elif node.op_token.type == ML_POW:
-            resultado, error = esquerda.powed_by(direita)
+        if node.op_tok.type == ML_PLUS:
+            result, error = left.added_to(right)
+        elif node.op_tok.type == ML_MINUS:
+            result, error = left.subbed_by(right)
+        elif node.op_tok.type == ML_MUL:
+            result, error = left.multed_by(right)
+        elif node.op_tok.type == ML_DIV:
+            result, error = left.dived_by(right)
+        elif node.op_tok.type == ML_POW:
+            result, error = left.powed_by(right)
 
         if error:
-            return res.falha(error)
+            return res.failure(error)
         else:
-            return res.sucesso(resultado.set_pos(node.pos_inicio, node.pos_fim))
+            return res.success(result.set_pos(node.pos_start, node.pos_end))
 
     def visit_UnaryOpNode(self, node, context):
         res = RTResult()
-        numero = res.registro(self.visita(node.node, context))
+        number = res.register(self.visit(node.node, context))
         if res.error:
             return res
 
         error = None
 
-        if node.op_token.type == ML_MINUS:
-            numero = numero.multed_by(Numero(-1))
+        if node.op_tok.type == ML_MINUS:
+            number, error = number.multed_by(Number(-1))
 
         if error:
-            return res.falha(error)
+            return res.failure(error)
         else:
-            return res.sucesso(numero.set_pos(node.pos_inicio, node.pos_fim))
+            return res.success(number.set_pos(node.pos_start, node.pos_end))
 
 #######################################
-# Executa o código
+# RUN
 #######################################
 
 
-def executa(arquivo, texto):
-    # Gera de Tokens
-    lexer = Lexer(arquivo, texto)
-    tokens, error = lexer.cria_tokens()
+def run(fn, text):
+    # Generate tokens
+    lexer = Lexer(fn, text)
+    tokens, error = lexer.make_tokens()
     if error:
         return None, error
 
-    # Gera Árvore Sintática Abstrata
+    # Generate AST
     parser = Parser(tokens)
-    arvore_sintatica = parser.parse()
-    if arvore_sintatica.error:
-        return None, arvore_sintatica.error
+    ast = parser.parse()
+    if ast.error:
+        return None, ast.error
 
-    # Roda o programa
-    interpretador = Interpretador()
-    contexto = Context('<program>')
-    resultado = interpretador.visita(arvore_sintatica.node, contexto)
+    # Run program
+    interpreter = Interpreter()
+    context = Context('<program>')
+    result = interpreter.visit(ast.node, context)
 
-    return resultado.value, resultado.error
+    return result.value, result.error
+#######################################
+# IMPORTS
+#######################################
+
+
+#######################################
+# CONSTANTS
+#######################################
+DIGITS = '0123456789'
+
+#######################################
+# ERRORS
+#######################################
+
+
+class Error:
+    def __init__(self, pos_start, pos_end, error_name, details):
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+        self.error_name = error_name
+        self.details = details
+
+    def as_string(self):
+        result = f'{self.error_name}: {self.details}\n'
+        result += f'File {self.pos_start.fn}, line {self.pos_start.ln + 1}'
+        result += '\n\n' + \
+            string_com_setas(self.pos_start.ftxt, self.pos_start, self.pos_end)
+        return result
+
+
+class IllegalCharError(Error):
+    def __init__(self, pos_start, pos_end, details):
+        super().__init__(pos_start, pos_end, 'Illegal Character', details)
+
+
+class InvalidSyntaxError(Error):
+    def __init__(self, pos_start, pos_end, details=''):
+        super().__init__(pos_start, pos_end, 'Invalid Syntax', details)
+
+
+class RTError(Error):
+    def __init__(self, pos_start, pos_end, details, context):
+        super().__init__(pos_start, pos_end, 'Runtime Error', details)
+        self.context = context
+
+    def as_string(self):
+        result = self.generate_traceback()
+        result += f'{self.error_name}: {self.details}'
+        result += '\n\n' + \
+            string_com_setas(self.pos_start.ftxt, self.pos_start, self.pos_end)
+        return result
+
+    def generate_traceback(self):
+        result = ''
+        pos = self.pos_start
+        ctx = self.context
+
+        while ctx:
+            result = f'  File {pos.fn}, line {str(pos.ln + 1)}, in {ctx.display_name}\n' + result
+            pos = ctx.parent_entry_pos
+            ctx = ctx.parent
+
+        return 'Traceback (most recent call last):\n' + result
+
+#######################################
+# POSITION
+#######################################
+
+
+class Position:
+    def __init__(self, idx, ln, col, fn, ftxt):
+        self.idx = idx
+        self.ln = ln
+        self.col = col
+        self.fn = fn
+        self.ftxt = ftxt
+
+    def advance(self, current_char=None):
+        self.idx += 1
+        self.col += 1
+
+        if current_char == '\n':
+            self.ln += 1
+            self.col = 0
+
+        return self
+
+    def copy(self):
+        return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
+
+#######################################
+# TOKENS
+#######################################
+
+
+ML_INT = 'INT'
+ML_FLOAT = 'FLOAT'
+ML_PLUS = 'PLUS'
+ML_MINUS = 'MINUS'
+ML_MUL = 'MUL'
+ML_DIV = 'DIV'
+ML_POW = 'POW'
+ML_LPAREN = 'LPAREN'
+ML_RPAREN = 'RPAREN'
+ML_EOF = 'EOF'
+
+
+class Token:
+    def __init__(self, type_, value=None, pos_start=None, pos_end=None):
+        self.type = type_
+        self.value = value
+
+        if pos_start:
+            self.pos_start = pos_start.copy()
+            self.pos_end = pos_start.copy()
+            self.pos_end.advance()
+
+        if pos_end:
+            self.pos_end = pos_end
+
+    def __repr__(self):
+        if self.value:
+            return f'{self.type}:{self.value}'
+        return f'{self.type}'
+
+#######################################
+# LEXER
+#######################################
+
+
+class Lexer:
+    def __init__(self, fn, text):
+        self.fn = fn
+        self.text = text
+        self.pos = Position(-1, 0, -1, fn, text)
+        self.current_char = None
+        self.advance()
+
+    def advance(self):
+        self.pos.advance(self.current_char)
+        self.current_char = self.text[self.pos.idx] if self.pos.idx < len(
+            self.text) else None
+
+    def make_tokens(self):
+        tokens = []
+
+        while self.current_char != None:
+            if self.current_char in ' \t':
+                self.advance()
+            elif self.current_char in DIGITS:
+                tokens.append(self.make_number())
+            elif self.current_char == '+':
+                tokens.append(Token(ML_PLUS, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '-':
+                tokens.append(Token(ML_MINUS, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '*':
+                tokens.append(Token(ML_MUL, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '/':
+                tokens.append(Token(ML_DIV, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '^':
+                tokens.append(Token(ML_POW, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == '(':
+                tokens.append(Token(ML_LPAREN, pos_start=self.pos))
+                self.advance()
+            elif self.current_char == ')':
+                tokens.append(Token(ML_RPAREN, pos_start=self.pos))
+                self.advance()
+            else:
+                pos_start = self.pos.copy()
+                char = self.current_char
+                self.advance()
+                return [], IllegalCharError(pos_start, self.pos, "'" + char + "'")
+
+        tokens.append(Token(ML_EOF, pos_start=self.pos))
+        return tokens, None
+
+    def make_number(self):
+        num_str = ''
+        dot_count = 0
+        pos_start = self.pos.copy()
+
+        while self.current_char != None and self.current_char in DIGITS + '.':
+            if self.current_char == '.':
+                if dot_count == 1:
+                    break
+                dot_count += 1
+                num_str += '.'
+            else:
+                num_str += self.current_char
+            self.advance()
+
+        if dot_count == 0:
+            return Token(ML_INT, int(num_str), pos_start, self.pos)
+        else:
+            return Token(ML_FLOAT, float(num_str), pos_start, self.pos)
+
+#######################################
+# NODES
+#######################################
+
+
+class NumberNode:
+    def __init__(self, tok):
+        self.tok = tok
+
+        self.pos_start = self.tok.pos_start
+        self.pos_end = self.tok.pos_end
+
+    def __repr__(self):
+        return f'{self.tok}'
+
+
+class BinOpNode:
+    def __init__(self, left_node, op_tok, right_node):
+        self.left_node = left_node
+        self.op_tok = op_tok
+        self.right_node = right_node
+
+        self.pos_start = self.left_node.pos_start
+        self.pos_end = self.right_node.pos_end
+
+    def __repr__(self):
+        return f'({self.left_node}, {self.op_tok}, {self.right_node})'
+
+
+class UnaryOpNode:
+    def __init__(self, op_tok, node):
+        self.op_tok = op_tok
+        self.node = node
+
+        self.pos_start = self.op_tok.pos_start
+        self.pos_end = node.pos_end
+
+    def __repr__(self):
+        return f'({self.op_tok}, {self.node})'
+
+#######################################
+# PARSE RESULT
+#######################################
+
+
+class ParseResult:
+    def __init__(self):
+        self.error = None
+        self.node = None
+
+    def register(self, res):
+        if isinstance(res, ParseResult):
+            if res.error:
+                self.error = res.error
+            return res.node
+
+        return res
+
+    def success(self, node):
+        self.node = node
+        return self
+
+    def failure(self, error):
+        self.error = error
+        return self
+
+#######################################
+# PARSER
+#######################################
+
+
+class Parser:
+    def __init__(self, tokens):
+        self.tokens = tokens
+        self.tok_idx = -1
+        self.advance()
+
+    def advance(self, ):
+        self.tok_idx += 1
+        if self.tok_idx < len(self.tokens):
+            self.current_tok = self.tokens[self.tok_idx]
+        return self.current_tok
+
+    def parse(self):
+        res = self.expr()
+        if not res.error and self.current_tok.type != ML_EOF:
+            return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                "Expected '+', '-', '*' or '/'"
+            ))
+        return res
+
+    ###################################
+
+    def atom(self):
+        res = ParseResult()
+        tok = self.current_tok
+
+        if tok.type in (ML_INT, ML_FLOAT):
+            res.register(self.advance())
+            return res.success(NumberNode(tok))
+
+        elif tok.type == ML_LPAREN:
+            res.register(self.advance())
+            expr = res.register(self.expr())
+            if res.error:
+                return res
+            if self.current_tok.type == ML_RPAREN:
+                res.register(self.advance())
+                return res.success(expr)
+            else:
+                return res.failure(InvalidSyntaxError(
+                    self.current_tok.pos_start, self.current_tok.pos_end,
+                    "Expected ')'"
+                ))
+
+        return res.failure(InvalidSyntaxError(
+            tok.pos_start, tok.pos_end,
+            "Expected int, float, '+', '-' or '('"
+        ))
+
+    def power(self):
+        return self.bin_op(self.atom, (ML_POW, ), self.factor)
+
+    def factor(self):
+        res = ParseResult()
+        tok = self.current_tok
+
+        if tok.type in (ML_PLUS, ML_MINUS):
+            res.register(self.advance())
+            factor = res.register(self.factor())
+            if res.error:
+                return res
+            return res.success(UnaryOpNode(tok, factor))
+
+        return self.power()
+
+    def term(self):
+        return self.bin_op(self.factor, (ML_MUL, ML_DIV))
+
+    def expr(self):
+        return self.bin_op(self.term, (ML_PLUS, ML_MINUS))
+
+    ###################################
+
+    def bin_op(self, func_a, ops, func_b=None):
+        if func_b == None:
+            func_b = func_a
+
+        res = ParseResult()
+        left = res.register(func_a())
+        if res.error:
+            return res
+
+        while self.current_tok.type in ops:
+            op_tok = self.current_tok
+            res.register(self.advance())
+            right = res.register(func_b())
+            if res.error:
+                return res
+            left = BinOpNode(left, op_tok, right)
+
+        return res.success(left)
+
+#######################################
+# RUNTIME RESULT
+#######################################
+
+
+class RTResult:
+    def __init__(self):
+        self.value = None
+        self.error = None
+
+    def register(self, res):
+        if res.error:
+            self.error = res.error
+        return res.value
+
+    def success(self, value):
+        self.value = value
+        return self
+
+    def failure(self, error):
+        self.error = error
+        return self
+
+#######################################
+# VALUES
+#######################################
+
+
+class Number:
+    def __init__(self, value):
+        self.value = value
+        self.set_pos()
+        self.set_context()
+
+    def set_pos(self, pos_start=None, pos_end=None):
+        self.pos_start = pos_start
+        self.pos_end = pos_end
+        return self
+
+    def set_context(self, context=None):
+        self.context = context
+        return self
+
+    def added_to(self, other):
+        if isinstance(other, Number):
+            return Number(self.value + other.value).set_context(self.context), None
+
+    def subbed_by(self, other):
+        if isinstance(other, Number):
+            return Number(self.value - other.value).set_context(self.context), None
+
+    def multed_by(self, other):
+        if isinstance(other, Number):
+            return Number(self.value * other.value).set_context(self.context), None
+
+    def dived_by(self, other):
+        if isinstance(other, Number):
+            if other.value == 0:
+                return None, RTError(
+                    other.pos_start, other.pos_end,
+                    'Division by zero',
+                    self.context
+                )
+
+            return Number(self.value / other.value).set_context(self.context), None
+
+    def powed_by(self, other):
+        if isinstance(other, Number):
+            return Number(self.value ** other.value).set_context(self.context), None
+
+    def __repr__(self):
+        return str(self.value)
+
+#######################################
+# CONTEXT
+#######################################
+
+
+class Context:
+    def __init__(self, display_name, parent=None, parent_entry_pos=None):
+        self.display_name = display_name
+        self.parent = parent
+        self.parent_entry_pos = parent_entry_pos
+
+#######################################
+# INTERPRETER
+#######################################
+
+
+class Interpreter:
+    def visit(self, node, context):
+        method_name = f'visit_{type(node).__name__}'
+        method = getattr(self, method_name, self.no_visit_method)
+        return method(node, context)
+
+    def no_visit_method(self, node, context):
+        raise Exception(f'No visit_{type(node).__name__} method defined')
+
+    ###################################
+
+    def visit_NumberNode(self, node, context):
+        return RTResult().success(
+            Number(node.tok.value).set_context(
+                context).set_pos(node.pos_start, node.pos_end)
+        )
+
+    def visit_BinOpNode(self, node, context):
+        res = RTResult()
+        left = res.register(self.visit(node.left_node, context))
+        if res.error:
+            return res
+        right = res.register(self.visit(node.right_node, context))
+        if res.error:
+            return res
+
+        if node.op_tok.type == ML_PLUS:
+            result, error = left.added_to(right)
+        elif node.op_tok.type == ML_MINUS:
+            result, error = left.subbed_by(right)
+        elif node.op_tok.type == ML_MUL:
+            result, error = left.multed_by(right)
+        elif node.op_tok.type == ML_DIV:
+            result, error = left.dived_by(right)
+        elif node.op_tok.type == ML_POW:
+            result, error = left.powed_by(right)
+
+        if error:
+            return res.failure(error)
+        else:
+            return res.success(result.set_pos(node.pos_start, node.pos_end))
+
+    def visit_UnaryOpNode(self, node, context):
+        res = RTResult()
+        number = res.register(self.visit(node.node, context))
+        if res.error:
+            return res
+
+        error = None
+
+        if node.op_tok.type == ML_MINUS:
+            number, error = number.multed_by(Number(-1))
+
+        if error:
+            return res.failure(error)
+        else:
+            return res.success(number.set_pos(node.pos_start, node.pos_end))
+
+#######################################
+# RUN
+#######################################
+
+
+def run(fn, text):
+    # Generate tokens
+    lexer = Lexer(fn, text)
+    tokens, error = lexer.make_tokens()
+    if error:
+        return None, error
+
+    # Generate AST
+    parser = Parser(tokens)
+    ast = parser.parse()
+    if ast.error:
+        return None, ast.error
+
+    # Run program
+    interpreter = Interpreter()
+    context = Context('<program>')
+    result = interpreter.visit(ast.node, context)
+
+    return result.value, result.error

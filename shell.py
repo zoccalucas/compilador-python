@@ -2,7 +2,7 @@ import compilador
 
 while True:
     text = input('compilador > ')
-    resultado, error = compilador.executa('<stdin>', text)
+    resultado, error = compilador.run('<stdin>', text)
 
     if error:
         print(error.__str__())
