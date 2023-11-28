@@ -39,23 +39,25 @@ class RuntimeError(Error):
     def __init__(self, pos_inicio, pos_fim, detalhes, context):
         super().__init__(pos_inicio, pos_fim, 'Erro na execução', detalhes + '\n')
         self.context = context
-        
+
     def as_string(self):
-        result  = self.generate_traceback()
+        result = self.generate_traceback()
         result += f'{self.nome_erro}: {self.detalhes}'
-        result += '\n\n' + string_com_setas(self.pos_inicio.texto, self.pos_inicio, self.pos_fim)
+        result += '\n\n' + \
+            string_com_setas(self.pos_inicio.texto,
+                             self.pos_inicio, self.pos_fim)
         return result
 
     def generate_traceback(self):
-        resultado = ''    
+        resultado = ''
         pos = self.pos_inicio
         ctx = self.context
-        
+
         while ctx:
             resultado = f'  Arquivo {pos.arquivo}, line {str(pos.linha + 1)}, in {ctx.display_name}\n' + resultado
             pos = ctx.parent_entry_pos
             ctx = ctx.parent
-            
+
             return 'Traceback (most recent call last):\n' + resultado
 
 #######################################
@@ -105,6 +107,7 @@ ML_DIV = 'DIVI'
 ML_LPAREN = 'ESQD_PAREN'
 ML_RPAREN = 'DIRT_PAREN'
 ML_EOF = 'EOF'
+ML_POW = 'POTE'
 
 
 class Token:
@@ -162,6 +165,9 @@ class Lexer:
                 self.avanca()
             elif self.caractere_atual == '/':
                 tokens.append(Token(ML_DIV, pos_inicio=self.pos))
+                self.avanca()
+            elif self.caractere_atual == '^':
+                tokens.append(Token(ML_POW, pos_inicio=self.pos))
                 self.avanca()
             elif self.caractere_atual == '(':
                 tokens.append(Token(ML_LPAREN, pos_inicio=self.pos))
@@ -293,18 +299,11 @@ class Parser:
 
     #######################################
 
-    def factor(self):
+    def atom(self):
         res = ParseResult()
         token = self.token_atual
 
-        if token.type in (ML_PLUS, ML_MINUS):
-            res.registro(self.avanca())
-            factor = res.registro(self.factor())
-            if res.error:
-                return res
-            return res.sucesso(UnaryOpNode(token, factor))
-
-        elif token.type in (ML_INT, ML_FLOAT):
+        if token.type in (ML_INT, ML_FLOAT):
             res.registro(self.avanca())
             return res.sucesso(NumberNode(token))
 
@@ -324,8 +323,24 @@ class Parser:
 
         return res.falha(SintaxeInvalidaError(
             token.pos_inicio, token.pos_fim,
-            "Número inteiro ou decimal esperado"
+            "Expected int, float, '+', '-' or '('"
         ))
+
+    def power(self):
+        return self.bin_op(self.atom, (ML_POW, ), self.factor)
+
+    def factor(self):
+        res = ParseResult()
+        token = self.token_atual
+
+        if token.type in (ML_PLUS, ML_MINUS):
+            res.registro(self.avanca())
+            factor = res.registro(self.factor())
+            if res.error:
+                return res
+            return res.sucesso(UnaryOpNode(token, factor))
+        
+        return self.power()
 
     def term(self):
         return self.bin_op(self.factor, (ML_MUL, ML_DIV))
@@ -335,16 +350,19 @@ class Parser:
 
     #######################################
 
-    def bin_op(self, func, ops):
+    def bin_op(self, func_a, ops, func_b=None):
+        if func_b == None:
+            func_b = func_a
+
         res = ParseResult()
-        esquerda = res.registro(func())
+        esquerda = res.registro(func_a())
         if res.error:
             return res
 
         while self.token_atual.type in ops:
             op_token = self.token_atual
             res.registro(self.avanca())
-            direita = res.registro(func())
+            direita = res.registro(func_b())
             if res.error:
                 return res
             esquerda = BinOpNode(esquerda, op_token, direita)
@@ -410,26 +428,30 @@ class Numero:
         if isinstance(other, Numero):
             if other.value == 0:
                 return None, RuntimeError(
-					other.pos_inicio, other.pos_fim,
-					'Divisão por zero',
+                    other.pos_inicio, other.pos_fim,
+                    'Divisão por zero',
                     self.context
-				)
-                
+                )
+
             return Numero(self.value / other.value).set_context(self.context), None
+
+    def powed_by(self, other):
+        if isinstance(other, Numero):
+            return Numero(self.value ** other.value).set_context(self.context), None
 
     def __repr__(self):
         return str(self.value)
-    
+
 
 #######################################
 # Contexto
 #######################################
 
 class Context:
-	def __init__(self, display_name, parent=None, parent_entry_pos=None):
-		self.display_name = display_name
-		self.parent = parent
-		self.parent_entry_pos = parent_entry_pos
+    def __init__(self, display_name, parent=None, parent_entry_pos=None):
+        self.display_name = display_name
+        self.parent = parent
+        self.parent_entry_pos = parent_entry_pos
 
 
 #######################################
@@ -448,7 +470,8 @@ class Interpretador:
 
     def visit_NumberNode(self, node, context):
         return RTResult().sucesso(
-            Numero(node.token.value).set_context(context).set_pos(node.pos_inicio, node.pos_fim)
+            Numero(node.token.value).set_context(
+                context).set_pos(node.pos_inicio, node.pos_fim)
         )
 
     def visit_BinOpNode(self, node, context):
@@ -468,6 +491,8 @@ class Interpretador:
             resultado, error = esquerda.multed_by(direita)
         elif node.op_token.type == ML_DIV:
             resultado, error = esquerda.dived_by(direita)
+        elif node.op_token.type == ML_POW:
+            resultado, error = esquerda.powed_by(direita)
 
         if error:
             return res.falha(error)
@@ -477,16 +502,17 @@ class Interpretador:
     def visit_UnaryOpNode(self, node, context):
         res = RTResult()
         numero = res.registro(self.visita(node.node, context))
-        if res.error: return res
-        
+        if res.error:
+            return res
+
         error = None
 
         if node.op_token.type == ML_MINUS:
             numero = numero.multed_by(Numero(-1))
-            
+
         if error:
             return res.falha(error)
-        else: 
+        else:
             return res.sucesso(numero.set_pos(node.pos_inicio, node.pos_fim))
 
 #######################################

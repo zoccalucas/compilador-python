@@ -1,7 +1,11 @@
-expr    : term (SOMA term | SUBT term)*
+expr    : term ((PLUS|MINUS) term)*
 
-term    : factor (MULT factor | DIVI factor)*
+term    : factor ((MUL|DIV) factor)*
 
-factor  : INTE|FLUT
-        : (SOMA|SUBT) factor
-        : ESQD_PAREN expr DIRT_PAREN
+factor	: (PLUS|MINUS) factor
+        : power
+
+power	: atom (POW factor)*
+
+atom 	: INT|FLOAT
+	: LPAREN expr RPAREN
