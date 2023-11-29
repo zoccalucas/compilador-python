@@ -119,6 +119,25 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     soma(5, 2)   
     ```
 
+  - Strings
+    ```
+    "Texto" 
+    "Texto " + "Texto2"
+    "Texto " * 3
+    ```
+
+  - Listas
+    ```
+    [1, 2] + 4
+    [1, 2] - 1 (Remove o elemento do index 1)
+    [1, 2, 3] - -1 (Remove o elemento do último índice)
+    [1, 2] - 3 (Erro de index)
+    [1, 2] / 0 (Retorno de index)
+    [1, 2, 3] / -1
+    [1, 2, 3] * [9, 8, 7] (Concatena listas)
+    FOR i = 1 TO 9 THEN 2 ^ 2
+    ```
+
 ### Alunos:
 
 Geovanne Lopes - 190803
