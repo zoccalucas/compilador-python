@@ -101,6 +101,7 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     VAR compra = IF 5 < 200 THEN 1 ELSE 0
     IF (5 < 200) THEN 1 ELSE 0
     IF 5 == 5 THEN 123 ELSE 234
+    VAR result = IF 5 == 5 THEN "Funcionou" ELSE "Não"
     ```
 
   - Estrutura de repetição
