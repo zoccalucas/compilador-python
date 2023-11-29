@@ -60,20 +60,20 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
       5 + (VAR x = 6)
       5 + VAR x = 6 (Erro)
     ```
-  - Operações matemáticas: 
-    - Soma
+
+  - Soma
     ```bash
       1 + 1 
     ``` 
-    - Subtração
+  - Subtração
     ```bash
       10 - 5
     ```
-    - Multiplicação
+  - Multiplicação
     ```bash
       3 * 2 = 6
     ```
-    - Divisão
+  - Divisão
     ```bash
       5 / 2
       5/0 (Erro)
@@ -81,12 +81,12 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
       10 / a (Erro)
     ```
 
-    - Potência
+  - Potência
     ```bash
       2 ^ 2
     ```
 
-    - Números Negativos
+  - Números Negativos
     ```bash
       -2
       --2 (Negativos pares formam números positivos)
@@ -99,10 +99,20 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
       not 1
       TRUE
       FALSE
-      5 == 5
-      5 == 5 AND 6==5
-      5 < 6
-      5 > 6
+    ```
+  - Operadores de Comparação
+    ```
+    5 == 5
+    5 == 5 AND 6==5
+    5 < 6
+    5 > 6
+    ```
+  - Estrutura condicional 
+    ```
+    VAR preco = 100
+    VAR compra = IF 5 < 200 THEN 1 ELSE 0
+    IF (5 < 200) THEN 1 ELSE 0
+    IF 5 == 5 THEN 123 ELSE 234
     ```
 
 ### Alunos:
