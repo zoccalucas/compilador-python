@@ -25,22 +25,40 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
 ```
 
 ## Suporte:
-
-  - Erros demonstrativos: Adiciona setas de posicionamento e linha de ocorrência dos erros;
+  - Erros demonstrativos: Adiciona setas de posicionamento, linha de ocorrência dos erros e mensagem com o erro;
+  - Erros personalizados: 
+    - Erro de caractére inválido:
+    ```bash
+        d
+    ```
+    - Erro de variável não definida:
+    ```bash
+        d
+    ```
+    - Erro de sintaxe:
+    ```bash
+        d
+    ```
+    - Erro de tempo de execução:
+    ```bash
+        d
+    ```
   - Manipulação Numérica: realiza a manipulação de números para reconhecer pontos flutuantes e inteiros e diferencia-los;
+    ```bash
+        2.5
+    ```
   - Precedência de Parênteses: identifica os parênteses em operações matemática, respeitando a ordem de precedência;
     ```bash
       2 * (2 + 3) = 10
     ```
-  - Erros personalizados: 
-    - Erro de caractére inválido;
-    - Erro de sintaxe;
-    - Erro de tempo de execução
+  
   - Múltiplas variáveis: 
     ```bash
       VAR a = 5
-      VAR b = VAR c = VAR d
+      VAR b = VAR c = 5
+      VAR b = VAR c = VAR d (Erro)
       5 + (VAR x = 6)
+      5 + VAR x = 6 (Erro)
     ```
   - Operações matemáticas: 
     - Soma
@@ -59,6 +77,8 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     ```bash
       5 / 2
       5/0 (Erro)
+      VAR a = 0
+      10 / a (Erro)
     ```
 
     - Potência
@@ -70,6 +90,15 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     ```bash
       -2
       --2 (Negativos pares formam números positivos)
+    ```
+  - Operadores Lógicos 
+    ```bash
+      1 (Positivo)
+      0 (Negativo)
+      not 0
+      not 1
+      TRUE
+      FALSE
     ```
 
 ### Alunos:
