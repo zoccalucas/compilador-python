@@ -26,28 +26,51 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
 
 ## Suporte:
 
-  OBS: Erros demonstrativos: Esse compilador adiciona "arrows", posicionamento dos erros erros personalizados para melhor visibilidade do usuário
+  - Erros demonstrativos: Adiciona setas de posicionamento e linha de ocorrência dos erros;
+  - Manipulação Numérica: realiza a manipulação de números para reconhecer pontos flutuantes e inteiros e diferencia-los;
+  - Precedência de Parênteses: identifica os parênteses em operações matemática, respeitando a ordem de precedência;
+    ```bash
+      2 * (2 + 3) = 10
+    ```
+  - Erros personalizados: 
+    - Erro de caractére inválido;
+    - Erro de sintaxe;
+    - Erro de tempo de execução
+  - Múltiplas variáveis: 
+    ```bash
+      VAR a = 5
+      VAR b = VAR c = VAR d
+      5 + (VAR x = 6)
+    ```
+  - Operações matemáticas: 
+    - Soma
+    ```bash
+      1 + 1 
+    ``` 
+    - Subtração
+    ```bash
+      10 - 5
+    ```
+    - Multiplicação
+    ```bash
+      3 * 2 = 6
+    ```
+    - Divisão
+    ```bash
+      5 / 2
+      5/0 (Erro)
+    ```
 
-  - Operações matemáticas respeitando a ordem de precedência: 
-  ```bash
-  1 + 1 = 2 -> Soma
+    - Potência
+    ```bash
+      2 ^ 2
+    ```
 
-  10 - 5 = 5 -> Subtração
-
-  3 * 2 = 6 -> Multiplicação  
-
-  5 / 2 = 2.5 -> Divisão
-
-  2 * (2 + 3) = 10 -> Precedência de Parênteses
-
-  10 / 0 -> Erro na execução: Divisão por zero 
-
-  2 ^ 2 = 4 -> Potência
-
-  -2 = -2 -> Número negativo
-
-  --2 = 2 -> Negativos pares formam números positivos
-  ```  
+    - Números Negativos
+    ```bash
+      -2
+      --2 (Negativos pares formam números positivos)
+    ```
 
 ### Alunos:
 
