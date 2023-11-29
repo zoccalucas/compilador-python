@@ -1,0 +1,10 @@
+FUN main()
+  IF (1) THEN 
+    IF (1) THEN 
+      PRINT(a)
+      VAR a = "Inválido"
+    END
+  END 
+END
+
+main()

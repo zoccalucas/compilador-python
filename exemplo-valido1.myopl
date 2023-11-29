@@ -1,0 +1,8 @@
+FUN main()
+  VAR a = "Válido"
+  IF (1) THEN 
+    PRINT(a) 
+  END
+END
+
+main()
