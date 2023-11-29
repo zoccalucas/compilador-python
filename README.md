@@ -28,21 +28,9 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
   - Erros demonstrativos: Adiciona setas de posicionamento, linha de ocorrência dos erros e mensagem com o erro;
   - Erros personalizados: 
     - Erro de caractére inválido:
-    ```bash
-        d
-    ```
     - Erro de variável não definida:
-    ```bash
-        d
-    ```
     - Erro de sintaxe:
-    ```bash
-        d
-    ```
     - Erro de tempo de execução:
-    ```bash
-        d
-    ```
   - Manipulação Numérica: realiza a manipulação de números para reconhecer pontos flutuantes e inteiros e diferencia-los;
     ```bash
         2.5
@@ -123,6 +111,12 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     WHILE TRUE THEN 123 
     VAR i = 0
     WHILE i < 5 THEN VAR i = i + 1
+    ```
+
+  - Funções
+    ```
+    FUN soma (a, b) -> a + b
+    soma(5, 2)   
     ```
 
 ### Alunos:
