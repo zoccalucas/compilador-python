@@ -93,12 +93,16 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     ```
   - Operadores Lógicos 
     ```bash
-      1 (Positivo)
-      0 (Negativo)
+      1 (Verdadeiro)
+      0 (Falso)
       not 0
       not 1
       TRUE
       FALSE
+      5 == 5
+      5 == 5 AND 6==5
+      5 < 6
+      5 > 6
     ```
 
 ### Alunos:
