@@ -138,6 +138,21 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     FOR i = 1 TO 9 THEN 2 ^ 2
     ```
 
+  - Funções 
+    ```
+    MATH_PI
+    PRINT("Hello, World!")
+    VAR nome = INPUT()
+    VAR idade = INPUT_INT()
+    IS_NUM(123)
+    IS_STR("oi")
+    IS_LIST([])
+    S_FUN(PRINT)
+    VAR list = [1, 2, 3]
+    APPEND(list, 4)
+    POP(list,3)
+    ```
+
 ### Alunos:
 
 Geovanne Lopes - 190803
