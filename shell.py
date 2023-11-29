@@ -1,10 +1,10 @@
-import compilador
+import basic
 
 while True:
-    text = input('compilador > ')
-    resultado, error = compilador.executa('<stdin>', text)
+    text = input('basic > ')
+    result, error = basic.run('<stdin>', text)
 
     if error:
-        print(error.__str__())
+        print(error.as_string())
     else:
-        print(resultado)
+        print(result)
