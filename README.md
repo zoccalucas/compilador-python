@@ -162,7 +162,7 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
 
 ### Alunos:
 
-Geovanne Lopes - 190803
-Guilherme Pereira da Silva - 190570
-Lucas Henrique Zocca Soares - 190907
-Rebeca Pedroso Silva - 190664
+- Geovanne Lopes - 190803
+- Guilherme Pereira da Silva - 190570
+- Lucas Henrique Zocca Soares - 190907
+- Rebeca Pedroso Silva - 190664
