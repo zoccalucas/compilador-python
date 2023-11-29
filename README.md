@@ -24,14 +24,6 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
   $ python3 shell.py
 ```
 
-<<<<<<< HEAD
-### Alunos:
-
-- Geovanne Lopes - RA: 
-- Guilherme Pereira - RA: 
-- Lucas Zocca - RA: 190907
-- Rebeca Pedroso - RA: 
-=======
 ## Suporte:
   - Erros demonstrativos: Adiciona setas de posicionamento, linha de ocorrência dos erros e mensagem com o erro;
   - Erros personalizados: 
@@ -162,10 +154,15 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     POP(list,3)
     ```
 
+  - Executar arquivos
+    ```
+      RUN("exemplo-valido1.myopl")
+      RUN("exemplo-invalido1.myopl")
+    ```
+
 ### Alunos:
 
 Geovanne Lopes - 190803
 Guilherme Pereira da Silva - 190570
 Lucas Henrique Zocca Soares - 190907
 Rebeca Pedroso Silva - 190664
->>>>>>> 7db48f72e23a31a0175faba56ecee21e33561e8c
