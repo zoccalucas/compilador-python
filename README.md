@@ -115,9 +115,19 @@ Compilador para matéria "Compiladores" da faculdade, contendo:
     IF 5 == 5 THEN 123 ELSE 234
     ```
 
+  - Estrutura de repetição
+    ```
+    VAR result = 1
+    FOR i = 1 TO 6 THEN VAR result = result * i
+    result
+    WHILE TRUE THEN 123 
+    VAR i = 0
+    WHILE i < 5 THEN VAR i = i + 1
+    ```
+
 ### Alunos:
 
-- Geovanne Lopes - RA: 
-- Guilherme Pereira - RA: 
-- Lucas Zocca - RA: 
-- Rebeca Pedroso - RA:
+Geovanne Lopes - 190803
+Guilherme Pereira da Silva - 190570
+Lucas Henrique Zocca Soares - 190907
+Rebeca Pedroso Silva - 190664
