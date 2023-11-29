@@ -1,8 +1,8 @@
-import basic
+import interpretador
 
 while True:
-    text = input('basic > ')
-    result, error = basic.run('<stdin>', text)
+    text = input('interpretador > ')
+    result, error = interpretador.run('<stdin>', text)
 
     if error:
         print(error.as_string())
