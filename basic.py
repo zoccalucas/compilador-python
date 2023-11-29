@@ -1,5 +1,5 @@
 #######################################
-# IMPORTS
+# Imports
 #######################################
 
 from strings_with_arrows import *
@@ -9,7 +9,7 @@ import os
 import math
 
 #######################################
-# CONSTANTS
+# Constantes
 #######################################
 
 DIGITS = '0123456789'
@@ -17,7 +17,7 @@ LETTERS = string.ascii_letters
 LETTERS_DIGITS = LETTERS + DIGITS
 
 #######################################
-# ERRORS
+# Erros
 #######################################
 
 
@@ -78,7 +78,7 @@ class RTError(Error):
         return 'Traceback (most recent call last):\n' + result
 
 #######################################
-# POSITION
+# Posição
 #######################################
 
 
@@ -104,7 +104,7 @@ class Position:
         return Position(self.idx, self.ln, self.col, self.fn, self.ftxt)
 
 #######################################
-# TOKENS
+# Tokens
 #######################################
 
 
@@ -177,7 +177,7 @@ class Token:
         return f'{self.type}'
 
 #######################################
-# LEXER
+# Lexer - Analisador Léxico
 #######################################
 
 
@@ -379,7 +379,7 @@ class Lexer:
         self.advance()
 
 #######################################
-# NODES
+# Nós (nodes)
 #######################################
 
 
@@ -538,7 +538,7 @@ class BreakNode:
         self.pos_end = pos_end
 
 #######################################
-# PARSE RESULT
+# Resultado do Parser
 #######################################
 
 
@@ -577,7 +577,7 @@ class ParseResult:
         return self
 
 #######################################
-# PARSER
+# Parser - Análise Sintática
 #######################################
 
 
@@ -1325,7 +1325,7 @@ class Parser:
         return res.success(left)
 
 #######################################
-# RUNTIME RESULT
+# Resultado do Runtime (execução)
 #######################################
 
 
@@ -1966,7 +1966,7 @@ BuiltInFunction.len = BuiltInFunction("len")
 BuiltInFunction.run = BuiltInFunction("run")
 
 #######################################
-# CONTEXT
+# Context de execução
 #######################################
 
 
@@ -1978,7 +1978,7 @@ class Context:
         self.symbol_table = None
 
 #######################################
-# SYMBOL TABLE
+# Tabela de Símbolos
 #######################################
 
 
@@ -2000,7 +2000,7 @@ class SymbolTable:
         del self.symbols[name]
 
 #######################################
-# INTERPRETER
+# Interpretador
 #######################################
 
 
@@ -2281,7 +2281,7 @@ class Interpreter:
         return RTResult().success_break()
 
 #######################################
-# RUN
+# Execução (run)
 #######################################
 
 
@@ -2308,19 +2308,19 @@ global_symbol_table.set("RUN", BuiltInFunction.run)
 
 
 def run(fn, text):
-    # Generate tokens
+    # Gera tokens
     lexer = Lexer(fn, text)
     tokens, error = lexer.make_tokens()
     if error:
         return None, error
 
-    # Generate AST
+    # Gera a Árvore de Sintaxe Abstrata
     parser = Parser(tokens)
     ast = parser.parse()
     if ast.error:
         return None, ast.error
 
-    # Run program
+    # Roda o compilador
     interpreter = Interpreter()
     context = Context('<program>')
     context.symbol_table = global_symbol_table
