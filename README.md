@@ -1,5 +1,7 @@
 # Compilador
 
+Compilador criado através do curso [Make YOUR OWN Programming Language in Python](https://www.youtube.com/watch?v=Eythq9848Fg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD) do canal [CodePulse](https://www.youtube.com/@CodePulse)
+
 Compilador para matéria "Compiladores" da faculdade, contendo:
 
 - Análise léxica;
